@@ -35,4 +35,4 @@ const videoSchema = new Schema({
 
 videoSchema.plugin(mongooseAggregatePaginate);
 
-export const Video = new mongoose.Model("Video", userSchema);
+export const Video = mongoose.model("Video", userSchema);
