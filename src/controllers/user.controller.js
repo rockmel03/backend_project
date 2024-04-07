@@ -16,22 +16,22 @@ const registerUser = asyncHandler(async (req, res) => {
     //check for user creation
     //return response   
 
-    const { fullname, email, username, password } = req.body
+    const { fullName, email, username, password } = req.body
     /* 
         // we can check every field is empty or not like this 
-        if (fullname === "") {
-            throw new ApiError(400, "fullname is required")
+        if (fullName === "") {
+            throw new ApiError(400, "fullName is required")
         }
     */
 
     //we can check multiple fields in on time like this
     if (
-        [fullname, email, username, password].some(field => field?.trim() === "")
+        [fullName, email, username, password].some(field => field?.trim() === "")
     ) {
         throw new ApiError(400, "all fields are required")
     }
 
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or: [{ username }, { email }]
     })
 
@@ -39,8 +39,14 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, "user with username and email already exists")
     }
 
+    // console.log(req.files)
     const avatarLocalPath = req.files?.avatar[0]?.path
-    const coverImageLocalPath = req.files?.coverImage[0]?.path
+    // const coverImageLocalPath = req.files?.coverImage[0]?.path //incase we did not get the coverImage it will return undefined
+    ////SOLUTION:
+    let coverImageLocalPath;
+    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.lenght > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path
+    }
 
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is required")
@@ -54,7 +60,7 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 
     const user = await User.create({
-        fullname,
+        fullName,
         avatar: avatar.url,
         coverImage: coverImage?.url || "",
         email,
