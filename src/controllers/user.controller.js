@@ -103,7 +103,11 @@ const loginUser = asyncHandler(async (req, res) => {
     // send tokens in cookies form securly
 
     const { username, email, password } = req.body;
-    if (!username || !email) throw new ApiError(400, "username or email and password is required")
+
+    if (!(username || email)) throw new ApiError(400, "username or email is required")
+
+    // here is alternative of above code based logic
+    // if (!username && !email) throw new ApiError(400, "username or email is required")
 
     const user = await User.findOne(
         {
