@@ -153,8 +153,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {
-                refreshToken: undefined
+            $unset: {
+                refreshToken: 1 // this removes fields form the document
             }
         }
         , { new: true } // return mein user ki updated value receive hogi
@@ -253,10 +253,12 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
     const avatarLocalPath = req.file?.path
-    if (!avatarLocalPath) throw new ApiError(400, "Avatar file is required")
+    if (!avatarLocalPath) throw new ApiError(400, "Avatar file is missing")
+
+    //TODO: delete old image 
 
     const avatar = await uploadOnCloudinary(avatarLocalPath);
-    if (!avatar) throw new ApiError(400, "Avatar file is required")
+    if (!avatar) throw new ApiError(400, "Avatar file is missing")
 
     const user = await User.findByIdAndUpdate(
         req.user?._id,
@@ -273,6 +275,8 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 const updateUserCoverImage = asyncHandler(async (req, res) => {
     const coverImageLocalPath = req.file?.path;
     if (!coverImageLocalPath) throw new ApiError(401, "cover image is missing")
+
+    //TODO: delete old image 
 
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)
     if (!coverImage.url) throw new ApiError(401, "cover image is missing")
@@ -298,4 +302,5 @@ export {
     updateAccountDetails,
     updateUserAvatar,
     updateUserCoverImage,
+
 }
