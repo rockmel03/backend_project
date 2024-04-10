@@ -201,7 +201,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             .status(200)
             .cookie("accessToken", accessToken, options)
             .cookie("refreshToken", refreshToken, options)
-            .json(new ApiResponse(200, { accessToken, refreshToken }), "Access Token refreshed")
+            .json(new ApiResponse(200, { accessToken, refreshToken }, "Access Token refreshed"))
     } catch (error) {
         throw new ApiError(401, error?.message || "invalid refresh token")
     }
@@ -214,7 +214,6 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
     if (!isPasswordCorrect) throw new ApiError(400, "Invalid Old Password");
-
 
     user.password = newPassword;
     await user.save({
@@ -282,7 +281,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)
     if (!coverImage.url) throw new ApiError(401, "cover image is missing")
 
-    const user = user.findByIdAndUpdate(req.user?._id,
+    const user = await User.findByIdAndUpdate(req.user?._id,
         {
             $set: { coverImage: coverImage?.url }
         },
