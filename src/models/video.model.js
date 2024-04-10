@@ -10,6 +10,10 @@ const videoSchema = new Schema({
         type: String, // cloudnary url
         required: true,
     },
+    title: {
+        type: String,
+        required: true
+    },
     description: {
         type: String,
         required: true,
