@@ -24,10 +24,21 @@ const uploadOnCloudinary = async (localFilePath) => {
     }
 }
 
+const deleteFromCloudinary = async function (filePath) {
+    try {
+        const publicID = filePath.split("/").pop().split(".")[0] // getting the public Id from the url
+        const response = await cloudinary.uploader.destroy(publicID); // deleting the file on cloudinary
+        if (response.result != "ok") console.error("file deletion on cloudinary failed")
+        return response;
+    } catch (error) {
+        return null;
+    }
+}
 
-cloudinary.uploader.upload("https://upload.wikimedia.org/wikipedia/commons/a/ae/Olympic_flag.jpg",
-    { public_id: "olympic_flag" },
-    function (error, result) { console.log(result); });
+
+// cloudinary.uploader.upload("https://upload.wikimedia.org/wikipedia/commons/a/ae/Olympic_flag.jpg",
+//     { public_id: "olympic_flag" },
+//     function (error, result) { console.log(result); });
 
 
-export { uploadOnCloudinary }
+export { uploadOnCloudinary, deleteFromCloudinary }
