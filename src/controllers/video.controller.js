@@ -27,6 +27,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     }
     const videoPath = req.files.videoFile[0]?.path
     const thumbnailPath = req.files.thumbnail[0]?.path
+    if (!(videoPath && thumbnailPath)) throw new ApiError(400, "video & thumbnail both files are required")
 
     const uploadedVideo = await uploadOnCloudinary(videoPath)
     const uploadedThumbanail = await uploadOnCloudinary(thumbnailPath)
