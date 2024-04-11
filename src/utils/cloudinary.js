@@ -28,7 +28,7 @@ const deleteFromCloudinary = async function (filePath) {
     try {
         const publicID = filePath.split("/").pop().split(".")[0] // getting the public Id from the url
         const response = await cloudinary.uploader.destroy(publicID); // deleting the file on cloudinary
-        if (response.result != "ok") console.error("file deletion on cloudinary failed")
+        if (response.result != "ok") console.error("file deletion on cloudinary failed", filePath)
         return response;
     } catch (error) {
         return null;
