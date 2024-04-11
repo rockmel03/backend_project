@@ -4,7 +4,7 @@ import { User } from "../models/user.model.js"
 import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
-import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -77,22 +77,27 @@ const updateVideo = asyncHandler(async (req, res) => {
 
     const { title, description } = req.body
     if (!title || !description) throw new ApiError(401, "title & description are required")
+    // if (!(title && description)) throw new ApiError(401, "title & description are required") // alternative of above line
 
     const thumbnailPath = req.file?.path
     if (!thumbnailPath) throw new ApiError(401, "thumbnail file is missing")
 
+    const videoDoc = await Video.findById(videoId)
+    if (!videoDoc) throw new ApiError(404, "video document not found");
+
+    //delete file from cloudinary server
+    await deleteFromCloudinary(videoDoc?.thumbnail)
+
+    //uploading file on cloudinary server
     const thumbnail = await uploadOnCloudinary(thumbnailPath)
     if (!thumbnail) throw new ApiError(400, "Error while uploading thumbnail")
 
-    const updatedVideoDocument = await Video.findByIdAndUpdate(
-        videoId,
-        {
-            $set: { title, description, thumbnail: thumbnail?.url },
-        },
-        {
-            new: true,
-        }
-    )
+    //updating values
+    videoDoc.title = title;
+    videoDoc.description = description;
+    videoDoc.thumbnail = thumbnail.url;
+
+    const updatedVideoDocument = await videoDoc.save({ validateBeforeSave: true });
 
     return res
         .status(200)
@@ -105,7 +110,10 @@ const deleteVideo = asyncHandler(async (req, res) => {
     //TODO: delete video
 
     const video = await Video.findByIdAndDelete(videoId)
-    console.log(video)
+
+    //delete files from cloudinary
+    await deleteFromCloudinary(video.videoFile)
+    await deleteFromCloudinary(video.thumbnail)
 
     return res.status(200)
         .json(new ApiResponse(200, {}, "video deleted successfully"))
