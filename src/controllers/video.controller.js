@@ -8,21 +8,28 @@ import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, query, sortBy, sortType = "ascending", userId } = req.query
+    const { page = 1, limit = 10, query, sortBy, sortType = "asc", userId } = req.query
     //TODO: get all videos based on query, sort, pagination
 
     let filter = {};
-    if (query) filter = { ...query };
+    // in mongoDB $or operator is used for filtering videos form elements passed into it,
+    // in mongoDB  $regex operator is used to perform regular expression pattern matching on string fields within documents.
+    if (query) filter = {
+        $or: [
+            { title: { $regex: query, $options: "i" } },
+            { description: { $regex: query, $options: "i" } }
+        ]
+    }
     if (userId) filter.owner = userId;
 
     let options = {
-        limit: parseInt(limit),
-        skip: (parseInt(page) - 1) * parseInt(limit), // (page -1) * limit 
+        limit: parseInt(limit), // parseInt() is used to convert value to integer/number , because we recieved it from the query params which is string
+        skip: (parseInt(page) - 1) * parseInt(limit), // ((page -1) * limit ) it is formula to get skip value
     }
 
     let sort = {};
     if (sortBy && sortType) {
-        sort[sortBy] = sortType == "ascending" ? 1 : -1; // sort.sortType = "descending"/'ascending'
+        sort[sortBy] = sortType == "asc" ? 1 : -1; // sort.sortType = "descending"/'ascending' here 1 mens ascending
     }
 
     const videos = await Video
@@ -30,9 +37,9 @@ const getAllVideos = asyncHandler(async (req, res) => {
         .sort(sort)
         .skip(options.skip)
         .limit(options.limit)
-        .exce();
+        .exec();
 
-    const totalCount = await Video.countDocuments(filter);
+    const totalCount = await Video.countDocuments(filter); // count filtered documents
 
     return res.status(200)
         .json(new ApiResponse(
