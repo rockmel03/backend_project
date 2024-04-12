@@ -106,11 +106,15 @@ const getVideoById = asyncHandler(async (req, res) => {
 
     if (!videoId) throw new ApiError(401, "invalid credential")
 
-    const video = await Video.findById(videoId)
-    if (!video) throw new ApiError(400, "video not found")
+    try {
+        const video = await Video.findById(videoId)
+        if (!video) throw new ApiError(400, "video not found")
 
-    return res.status(200)
-        .json(new ApiResponse(200, video, "video fetched successfully"))
+        return res.status(200)
+            .json(new ApiResponse(200, video, "video fetched successfully"))
+    } catch (error) {
+        throw new ApiError(400, "video not found or invalid video Id")
+    }
 
 })
 
@@ -122,29 +126,33 @@ const updateVideo = asyncHandler(async (req, res) => {
     if (!title || !description) throw new ApiError(401, "title & description are required")
     // if (!(title && description)) throw new ApiError(401, "title & description are required") // alternative of above line
 
-    const thumbnailPath = req.file?.path
-    if (!thumbnailPath) throw new ApiError(401, "thumbnail file is missing")
+    try {
+        const thumbnailPath = req.file?.path
+        if (!thumbnailPath) throw new ApiError(401, "thumbnail file is missing")
 
-    const videoDoc = await Video.findById(videoId)
-    if (!videoDoc) throw new ApiError(404, "video document not found");
+        const videoDoc = await Video.findById(videoId)
+        if (!videoDoc) throw new ApiError(404, "video document not found");
 
-    //delete file from cloudinary server
-    await deleteFromCloudinary(videoDoc?.thumbnail)
+        //delete file from cloudinary server
+        await deleteFromCloudinary(videoDoc?.thumbnail)
 
-    //uploading file on cloudinary server
-    const thumbnail = await uploadOnCloudinary(thumbnailPath)
-    if (!thumbnail) throw new ApiError(400, "Error while uploading thumbnail")
+        //uploading file on cloudinary server
+        const thumbnail = await uploadOnCloudinary(thumbnailPath)
+        if (!thumbnail) throw new ApiError(400, "Error while uploading thumbnail")
 
-    //updating values
-    videoDoc.title = title;
-    videoDoc.description = description;
-    videoDoc.thumbnail = thumbnail.url;
+        //updating values
+        videoDoc.title = title;
+        videoDoc.description = description;
+        videoDoc.thumbnail = thumbnail.url;
 
-    const updatedVideoDocument = await videoDoc.save({ validateBeforeSave: true });
+        const updatedVideoDocument = await videoDoc.save({ validateBeforeSave: true });
 
-    return res
-        .status(200)
-        .json(new ApiResponse(200, updatedVideoDocument, "document updated successfully"))
+        return res
+            .status(200)
+            .json(new ApiResponse(200, updatedVideoDocument, "document updated successfully"))
+    } catch (error) {
+        throw new ApiError(404, `video document not found Error: ${error?.message}`);
+    }
 
 })
 
@@ -152,27 +160,36 @@ const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: delete video
 
-    const video = await Video.findByIdAndDelete(videoId)
+    try {
+        
+        const video = await Video.findByIdAndDelete(videoId)
+        if (!video) throw new ApiError(400, "video document not found");
 
-    //delete files from cloudinary
-    await deleteFromCloudinary(video.videoFile)
-    await deleteFromCloudinary(video.thumbnail)
+        //delete files from cloudinary
+        await deleteFromCloudinary(video.videoFile)
+        await deleteFromCloudinary(video.thumbnail)
 
-    return res.status(200)
-        .json(new ApiResponse(200, {}, "video deleted successfully"))
+        return res.status(200)
+            .json(new ApiResponse(200, {}, "video deleted successfully"))
+    } catch (error) {
+        throw new ApiError(400, `invalid video id :: video document not found ERROR: ${error.message}`);
+    }
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
-    const video = await Video.findById(videoId)
-    if (!video) throw new ApiError(400, "video document not found");
+    try {
+        const video = await Video.findById(videoId)
+        if (!video) throw new ApiError(400, "video document not found");
 
-    video.isPublished = !video.isPublished
+        video.isPublished = !video.isPublished
 
-    const updateVideo = await video.save(); // save the document
-    if (!updateVideo) throw new ApiError(500, "something went wrong while saving video");
+        const updateVideo = await video.save(); // save the document
 
-    return res.status(200).json(new ApiResponse(200, updateVideo, "toggled Successfully"));
+        return res.status(200).json(new ApiResponse(200, updateVideo, "toggled Successfully"));
+    } catch (error) {
+        throw new ApiError(400, `invalid video id :: video document not found ERROR: ${error.message}`);
+    }
 })
 
 export {
