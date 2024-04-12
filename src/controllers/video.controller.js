@@ -8,9 +8,43 @@ import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
+    const { page = 1, limit = 10, query, sortBy, sortType = "ascending", userId } = req.query
     //TODO: get all videos based on query, sort, pagination
 
+    let filter = {};
+    if (query) filter = { ...query };
+    if (userId) filter.owner = userId;
+
+    let options = {
+        limit: parseInt(limit),
+        skip: (parseInt(page) - 1) * parseInt(limit), // (page -1) * limit 
+    }
+
+    let sort = {};
+    if (sortBy && sortType) {
+        sort[sortBy] = sortType == "ascending" ? 1 : -1; // sort.sortType = "descending"/'ascending'
+    }
+
+    const videos = await Video
+        .find(filter)
+        .sort(sort)
+        .skip(options.skip)
+        .limit(options.limit)
+        .exce();
+
+    const totalCount = await Video.countDocuments(filter);
+
+    return res.status(200)
+        .json(new ApiResponse(
+            200,
+            {
+                result: videos,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                totalCount,
+                totalPages: Math.ceil(totalCount / parseInt(limit)),
+            }
+            , "Videos fetched successfully"))
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
