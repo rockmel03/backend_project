@@ -56,11 +56,12 @@ const publishAVideo = asyncHandler(async (req, res) => {
     // create Vidio object and set values in it like urls
     // send response if every thing allwright 
 
-    if ([title, description].some(field => field?.trim() === "")) {
-        throw new ApiError(401, "all fields are required")
-    }
-    const videoPath = req.files.videoFile[0]?.path
-    const thumbnailPath = req.files.thumbnail[0]?.path
+    // if ([title, description].some(field => field?.trim() === "")) throw new ApiError(401, "all fields are required") // not working
+    if (!(title && description)) throw new ApiError(401, "all fields are required") // not working
+
+    const videoPath = (req.files && Array.isArray(req.files.videoFile) && req.files.videoFile.length > 0) ? req.files.videoFile[0]?.path : null;
+    const thumbnailPath = (req.files && req.files.thumbnail && req.files.thumbnail.length > 0) ? req.files.thumbnail[0]?.path : null;
+
     if (!(videoPath && thumbnailPath)) throw new ApiError(400, "video & thumbnail both files are required")
 
     const uploadedVideo = await uploadOnCloudinary(videoPath)
@@ -69,10 +70,10 @@ const publishAVideo = asyncHandler(async (req, res) => {
     if (!uploadedVideo) throw new ApiError(401, "video file is missing")
     if (!uploadedThumbanail) throw new ApiError(401, "thumbnail is missing")
 
-    console.log(uploadedVideo)
-    console.log(uploadedThumbanail)
+    // console.log(uploadedVideo)
+    // console.log(uploadedThumbanail)
 
-    const video = new Video.create(
+    const video = await Video.create(
         {
             videoFile: uploadedVideo.url,
             thumbnail: uploadedThumbanail.url,
@@ -86,7 +87,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     if (!video) throw new ApiError(500, "Something went wrong while creating the video");
 
     return res.status(200)
-        .json(new ApiError(200, video, "vedio document created successfully"))
+        .json(new ApiResponse(200, video, "vedio document created successfully"))
 })
 
 const getVideoById = asyncHandler(async (req, res) => {
