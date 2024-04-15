@@ -28,7 +28,7 @@ const createTweet = asyncHandler(async (req, res) => {
 
 const getUserTweets = asyncHandler(async (req, res) => {
     // TODO: get user tweets
-    const { userId } = req.param
+    const { userId } = req.params
 
     const check = isValidObjectId(userId);
     if (!check) throw new ApiError(400, "invalid userId");
@@ -36,7 +36,7 @@ const getUserTweets = asyncHandler(async (req, res) => {
     try {
         const tweets = await Tweet.find(
             { owner: userId }
-        )
+        ).select("-owner")
 
         return res
             .status(200)
@@ -50,7 +50,7 @@ const getUserTweets = asyncHandler(async (req, res) => {
 
 const updateTweet = asyncHandler(async (req, res) => {
     //TODO: update tweet
-    const { tweetId } = req.param
+    const { tweetId } = req.params
     const { content } = req.body
 
     const check = isValidObjectId(tweetId);
@@ -58,13 +58,15 @@ const updateTweet = asyncHandler(async (req, res) => {
     if (content.trim() == "") throw new ApiError(400, "content is empty")
 
     try {
-        const tweet = await Tweet.findByIdAndUpdate(
-            tweetId,
+        const tweet = await Tweet.findOneAndUpdate(
+            { _id: tweetId, owner: req.user?._id },
             {
-                $set: { content }
+                $set: { content: content }
             },
             { new: true }
-        )
+        ).select("-owner")
+
+        if (!tweet) throw new ApiError(500, "tweet not found or invalid user")
 
         return res
             .status(200)
@@ -76,13 +78,16 @@ const updateTweet = asyncHandler(async (req, res) => {
 
 const deleteTweet = asyncHandler(async (req, res) => {
     //TODO: delete tweet
-    const { tweetId } = req.param
+    const { tweetId } = req.params
 
     const check = isValidObjectId(tweetId);
     if (!check) throw new ApiError(400, "invalid tweetId")
 
     try {
-        const tweet = Tweet.findByIdAndDelete(tweetId)
+        const tweet = await Tweet.findByIdAndDelete(tweetId)
+
+        if (!tweet) throw new ApiError(500, "tweet not found or already deleted")
+
         return res
             .status(200)
             .json(new ApiResponse(200, tweet, "tweet deleted successfully"))
