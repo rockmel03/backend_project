@@ -94,7 +94,7 @@ const updateComment = asyncHandler(async (req, res) => {
         const commentDocument = await Comment.findOneAndUpdate(
             { _id: commentId, owner: req.user?._id },
             {
-                $set: { comment }
+                $set: { content: comment }
             },
             { new: true }
         )
@@ -117,8 +117,8 @@ const deleteComment = asyncHandler(async (req, res) => {
     if (!check) throw new ApiError(400, "invalid videoId ");
 
     try {
-        const commentDocument = await Comment.findByIdAndDelete(commentDocument)
-        if (!commentDocument) throw new ApiError(500, "something went wrong while deleting documnent")
+        const commentDocument = await Comment.findOneAndDelete({ _id: commentId, owner: req.user?.id })
+        if (!commentDocument) throw new ApiError(500, "comment not found or comment already deleted");
 
         return res
             .status(200)
